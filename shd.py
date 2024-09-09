@@ -1,5 +1,7 @@
 import numpy as np
 
+from hashlib import md5
+
 from ml_genn import Connection, Network, Population
 from ml_genn.callbacks import Checkpoint, SpikeRecorder, VarRecorder, Callback
 from ml_genn.compilers import EventPropCompiler, InferenceCompiler
@@ -21,6 +23,9 @@ import copy
 
 from argparse import ArgumentParser
 
+import os
+from callbacks import CSVLog
+
 
 parser = ArgumentParser()
 parser.add_argument("--learn_ff", type=int, default=1,  help="Learn delays in feedforward connections")
@@ -35,11 +40,11 @@ parser.add_argument("--speaker", type=int, default=0, help="Speaker to use as va
 args = parser.parse_args()
 learn_ff = bool(args.learn_ff)
 learn_rec = bool(args.learn_rec)
+print("learn_ff",learn_ff,"ff_init",args.ff_init,"learn_rec",learn_rec,"rec_init",args.rec_init, "k_reg",args.k_reg, "speaker",args.speaker)
 
-
-NUM_HIDDEN = 256
-BATCH_SIZE = 32
-NUM_EPOCHS = 50
+NUM_HIDDEN = args.num_hidden
+BATCH_SIZE = 256
+NUM_EPOCHS = 200
 EXAMPLE_TIME = 20.0
 AUGMENT_SHIFT = 40
 P_BLEND = 0.5
@@ -49,20 +54,22 @@ DT = 1.0
 # in example are shifted in space by normally-distributed value
 np.random.seed(args.seed)
 
+# Figure out unique suffix for model data
+unique_suffix = "_".join(("_".join(str(i) for i in val) if isinstance(val, list) 
+                         else str(val))
+                         for arg, val in vars(args).items())
+
 class EaseInSchedule(Callback):
     def __init__(self):
         pass
-
     def set_params(self, compiled_network, **kwargs):
-        self._optimisers = [optimiser[0] for optimiser in compiled_network.optimisers[:3]]
-
+        self._optimiser = compiled_network.optimisers[0][0]
     def on_batch_begin(self, batch):
         # Set parameter to return value of function
-        for optimiser in self._optimisers:
-            if optimiser.alpha < 0.001 :
-                optimiser.alpha = (0.001 / 1000.0) * (1.05 ** batch)
-            else:
-                optimiser.alpha = 0.001
+        if self._optimiser.alpha < 0.001 :
+            self._optimiser.alpha = (self._optimiser.alpha) * (1.05 ** batch)
+        else:
+            self._optimiser.alpha = 0.001
 
 
 class Shift:
@@ -136,30 +143,26 @@ blend = Blend(P_BLEND, dataset.sensor_size)
 max_spikes = 0
 latest_spike_time = 0
 raw_dataset = []
-idx= np.arange(len(dataset),dtype= int)
-np.random.shuffle(idx)
-classes = [[] for _ in range(20)]
-for i,j  in enumerate(idx[:7644]):
-    events, label = dataset[j]
-    events = np.delete(events, np.where(events["t"] >= 1000000))
-    # Add raw events and label to list
-    raw_dataset.append((events, label))
-    classes[label].append(i)
-    # Calculate max spikes and max times
-    max_spikes = max(max_spikes, len(events))
-    latest_spike_time = max(latest_spike_time, np.amax(events["t"]) / 1000.0)
-    
 spikes_val = []
 labels_val = []
-for i in idx[7644:]:
-    events, label = dataset[i]
-    
+classes = [[] for _ in range(20)]
+for i, data in enumerate(dataset):
+    events, label = data
     events = np.delete(events, np.where(events["t"] >= 1000000))
-
-    spikes_val.append(preprocess_tonic_spikes(events, dataset.ordering,
+    # Add raw events and label to list
+    if dataset.speaker[i] == args.speaker:
+        
+        spikes_val.append(preprocess_tonic_spikes(events, dataset.ordering,
                                               dataset.sensor_size))
-    labels_val.append(label)
-
+        labels_val.append(label)
+    else:
+        classes[label].append(len(raw_dataset))
+        raw_dataset.append((events, label))
+        
+        # Calculate max spikes and max times
+        max_spikes = max(max_spikes, len(events))
+        latest_spike_time = max(latest_spike_time, np.amax(events["t"]) / 1000.0)
+ 
 max_spikes = max(max_spikes, calc_max_spikes(spikes_val))
 latest_spike_time = max(latest_spike_time, calc_latest_spike_time(spikes_val))
 
@@ -176,13 +179,10 @@ for i in range(len(dataset)):
 
 # Determine max spikes and latest spike time
 max_spikes = max(max_spikes, calc_max_spikes(spikes_test))
-latest_spike_time = max(latest_spike_time, calc_latest_spike_time(spikes_test)) + max(args.ff_init, args.rec_init) + 100
-
-print(f"Max spikes {max_spikes}, latest spike time {latest_spike_time}")
+latest_spike_time = max(latest_spike_time, calc_latest_spike_time(spikes_test))
 
 
-
-serialiser = Numpy("shd_augment_delay_checkpoints")
+#serialiser = Numpy("checkpoints_" + unique_suffix)
 network = Network(default_params)
 with network:
     # Populations
@@ -195,10 +195,19 @@ with network:
                         num_output)
 
     # Connections
+    if not args.learn_ff and args.ff_init == 0:
+        ff_init = 255
+    else:
+        ff_init = args.ff_init
+
+    if not args.learn_rec and args.learn_rec == 0:
+        rec_init = 255
+    else:
+        rec_init = args.rec_init
     Conn_Pop0_Pop1 = Connection(input, hidden, Dense(Normal(mean=0.03, sd=0.01), np.random.uniform(0, args.ff_init, size=(num_input, NUM_HIDDEN))),
-               Exponential(5.0), max_delay_steps=args.ff_init+100)
+               Exponential(5.0), max_delay_steps=args.learn_ff*1000+(1-args.learn_ff)*ff_init)
     Conn_Pop1_Pop1 = Connection(hidden, hidden, Dense(Normal(mean=0.0, sd=0.02), np.random.uniform(0, args.rec_init, size=(NUM_HIDDEN, NUM_HIDDEN))),
-               Exponential(5.0), max_delay_steps=args.ff_init+100)
+               Exponential(5.0), max_delay_steps=args.learn_rec*1000+(1-args.learn_rec)*rec_init)
     Conn_Pop1_Pop2 = Connection(hidden, output, Dense(Normal(mean=0.0, sd=0.03)),
                Exponential(5.0))
 
@@ -213,16 +222,20 @@ compiler = EventPropCompiler(example_timesteps=max_example_timesteps,
                                 reg_lambda_upper=args.k_reg, reg_lambda_lower=args.k_reg, 
                                 reg_nu_upper=14, max_spikes=1500,
                                 delay_learn_conns=delay_learn_conns,
-                                optimiser=Adam(0.001 * 0.01 / 1.05), delay_optimiser=Adam(args.delays_lr), 
+                                optimiser=Adam(0.001 * 0.01), delay_optimiser=Adam(args.delays_lr),
                                 batch_size=BATCH_SIZE, rng_seed=args.seed)
-compiled_net = compiler.compile(network)
+
+model_name = (f"classifier_train_{md5(unique_suffix.encode()).hexdigest()}"
+                  if os.name == "nt" else f"classifier_train_{unique_suffix}")
+compiled_net = compiler.compile(network, name=model_name)
 
 with compiled_net:
     # Loop through epochs
     start_time = perf_counter()
-    #callbacks = ["batch_progress_bar", Checkpoint(serialiser), SpikeRecorder(hidden, key="hidden_spikes", record_counts=True), EaseInSchedule()]
-    callbacks = [Checkpoint(serialiser), SpikeRecorder(hidden, key="hidden_spikes", record_counts=True), EaseInSchedule()]
-    best_acc, best_e = 0, 0
+    callbacks = [CSVLog(f"results/train_output_{unique_suffix}.csv", output), SpikeRecorder(hidden, key="hidden_spikes", record_counts=True), EaseInSchedule()]
+    validation_callbacks = [CSVLog(f"results/valid_output_{unique_suffix}.csv", output)]
+    best_acc, best_e, best_acc_train = 0, 0, 0
+    early_stop = 25
     for e in range(NUM_EPOCHS):
         # Apply augmentation to events and preprocess
         spikes_train = []
@@ -237,7 +250,7 @@ with compiled_net:
         train_metrics, valid_metrics, train_cb, valid_cb  = compiled_net.train({input: spikes_train},
                                             {output: labels_train},
                                             start_epoch=e, num_epochs=1, 
-                                            shuffle=True, callbacks=callbacks, validation_x={input: spikes_val}, validation_y={output: labels_val})
+                                            shuffle=True, callbacks=callbacks, validation_callbacks=validation_callbacks, validation_x={input: spikes_val}, validation_y={output: labels_val})
 
         
         
@@ -252,56 +265,28 @@ with compiled_net:
         g_view[:,hidden_spikes==0] += 0.002
         _Conn_Pop0_Pop1.vars["g"].push_to_device()
 
+        if np.count_nonzero(hidden_spikes==0) > NUM_HIDDEN/10:
+            print(np.count_nonzero(hidden_spikes==0), " number of silent neurons in architecture", args.learn_ff, args.learn_rec, args.ff_init, args.rec_init, args.k_reg, "at epoch", e)
+
         #to make sure that delays are not drifting
-        if learn_ff:
+        if learn_ff and not learn_rec:
             Conn_Pop0_Pop1_delay = compiled_net.connection_populations[Conn_Pop0_Pop1].vars["d"].view.reshape((num_input, NUM_HIDDEN))
             _Conn_Pop0_Pop1.vars["d"].pull_from_device()
             d_view = _Conn_Pop0_Pop1.vars["d"].view.reshape((num_input, NUM_HIDDEN))
             min_delay = np.min(d_view)
             if min_delay != 0:
-                print("Delays drifting, minimum delay is:", min_delay)
                 d_view -= min_delay
                 _Conn_Pop0_Pop1.vars["d"].push_to_device()
         
 
         if valid_metrics[output].result > best_acc:
             best_acc = valid_metrics[output].result
+            best_acc_train = train_metrics[output].result
             best_e = e
-
-    end_time = perf_counter()
-    
-    
-    
-
-
-# Load network state from final checkpoint
-network.load((best_e,), serialiser)
-
-compiler = InferenceCompiler(evaluate_timesteps=max_example_timesteps,
-                                reset_in_syn_between_batches=True,
-                                batch_size=BATCH_SIZE)
-model_name = "shd_" + str(args.learn_ff) + "_" + str(args.ff_init) + "_" + str(args.learn_rec) + "_" + str(args.rec_init) + "_" + str(args.delays_lr) + "_" + str(args.k_reg)
-compiled_net = compiler.compile(network, name=model_name)
-
-with compiled_net:
-    # Evaluate model on numpy dataset
-    spikes_train = []
-    labels_train = []
-    for events, label in raw_dataset:
-            spikes_train.append(preprocess_tonic_spikes((events, dataset.ordering,
-                                                    dataset.sensor_size)))
-            labels_train.append(label)
-    train_metrics, _  = compiled_net.evaluate({input: spikes_train},
-                                        {output: labels_train})
-    valid_metrics, _  = compiled_net.evaluate({input: spikes_val},
-                                        {output: labels_val})
-    test_metrics, _  = compiled_net.evaluate({input: spikes_test},
-                                        {output: labels_test})
-    end_time = perf_counter()
-
-    print(f"Training accuracy = {100 * train_metrics[output].result}%")
-    print(f"Validation accuracy = {100 * valid_metrics[output].result}%")
-    print(f"Test Accuracy = {100 * test_metrics[output].result}%")
-    print(f"Time = {end_time - start_time}s")
+            early_stop = 25
+        else:
+            early_stop -= 1
+            if early_stop < 0:
+                break
 
     
