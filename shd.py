@@ -29,22 +29,22 @@ from callbacks import CSVLog
 
 parser = ArgumentParser()
 parser.add_argument("--learn_ff", type=int, default=1,  help="Learn delays in feedforward connections")
-parser.add_argument("--ff_init", type=int, default=300, help="Intialise delays in feedforward connection as this")
-parser.add_argument("--learn_rec", type=int, default=0, help="Learn delays in recurrent connections")
+parser.add_argument("--ff_init", type=int, default=150, help="Intialise delays in feedforward connection as this")
+parser.add_argument("--learn_rec", type=int, default=1, help="Learn delays in recurrent connections")
 parser.add_argument("--rec_init", type=int, default=0, help="Intialise delays in recurrent connection as this")
 parser.add_argument("--delays_lr", type=float, default=0.1, help="Learning rate for the delays")
 parser.add_argument("--seed", type=int, default=123, help="Random seed")
 parser.add_argument("--k_reg", type=float, default=5e-11, help="Spike regularisation strength")
-parser.add_argument("--num_hidden", type=int, default=256, help="Number of hidden neurons")
-parser.add_argument("--speaker", type=int, default=0, help="Speaker to use as validation (4 and 5 are only in test)")
+parser.add_argument("--num_hidden", type=int, default=512, help="Number of hidden neurons")
+parser.add_argument("--early_stop", type=int, default=15, help="Stop after this many epochs)")
 args = parser.parse_args()
 learn_ff = bool(args.learn_ff)
 learn_rec = bool(args.learn_rec)
-print("learn_ff",learn_ff,"ff_init",args.ff_init,"learn_rec",learn_rec,"rec_init",args.rec_init, "k_reg",args.k_reg, "speaker",args.speaker)
+print("learn_ff",learn_ff,"ff_init",args.ff_init,"learn_rec",learn_rec,"rec_init",args.rec_init, "k_reg",args.k_reg, "early_stop", args.early_stop)
 
 NUM_HIDDEN = args.num_hidden
 BATCH_SIZE = 256
-NUM_EPOCHS = 200
+NUM_EPOCHS = 300
 EXAMPLE_TIME = 20.0
 AUGMENT_SHIFT = 40
 P_BLEND = 0.5
@@ -143,28 +143,17 @@ blend = Blend(P_BLEND, dataset.sensor_size)
 max_spikes = 0
 latest_spike_time = 0
 raw_dataset = []
-spikes_val = []
-labels_val = []
 classes = [[] for _ in range(20)]
 for i, data in enumerate(dataset):
     events, label = data
     events = np.delete(events, np.where(events["t"] >= 1000000))
     # Add raw events and label to list
-    if dataset.speaker[i] == args.speaker:
-        
-        spikes_val.append(preprocess_tonic_spikes(events, dataset.ordering,
-                                              dataset.sensor_size))
-        labels_val.append(label)
-    else:
-        classes[label].append(len(raw_dataset))
-        raw_dataset.append((events, label))
-        
-        # Calculate max spikes and max times
-        max_spikes = max(max_spikes, len(events))
-        latest_spike_time = max(latest_spike_time, np.amax(events["t"]) / 1000.0)
- 
-max_spikes = max(max_spikes, calc_max_spikes(spikes_val))
-latest_spike_time = max(latest_spike_time, calc_latest_spike_time(spikes_val))
+    classes[label].append(len(raw_dataset))
+    raw_dataset.append((events, label))
+    
+    # Calculate max spikes and max times
+    max_spikes = max(max_spikes, len(events))
+    latest_spike_time = max(latest_spike_time, np.amax(events["t"]) / 1000.0)
 
 dataset = SHD(save_to="../data", train=False)
 
@@ -232,10 +221,10 @@ compiled_net = compiler.compile(network, name=model_name)
 with compiled_net:
     # Loop through epochs
     start_time = perf_counter()
-    callbacks = [CSVLog(f"results/train_output_{unique_suffix}.csv", output), SpikeRecorder(hidden, key="hidden_spikes", record_counts=True), EaseInSchedule()]
-    validation_callbacks = [CSVLog(f"results/valid_output_{unique_suffix}.csv", output)]
-    best_acc, best_e, best_acc_train = 0, 0, 0
-    early_stop = 25
+    callbacks = [CSVLog(f"results/train_final_{unique_suffix}.csv", output), SpikeRecorder(hidden, key="hidden_spikes", record_counts=True), EaseInSchedule()]
+    validation_callbacks = [CSVLog(f"results/test_final_{unique_suffix}.csv", output)]
+    best_e, best_acc = 0, 0
+    early_stop = args.early_stop
     for e in range(NUM_EPOCHS):
         # Apply augmentation to events and preprocess
         spikes_train = []
@@ -250,7 +239,7 @@ with compiled_net:
         train_metrics, valid_metrics, train_cb, valid_cb  = compiled_net.train({input: spikes_train},
                                             {output: labels_train},
                                             start_epoch=e, num_epochs=1, 
-                                            shuffle=True, callbacks=callbacks, validation_callbacks=validation_callbacks, validation_x={input: spikes_val}, validation_y={output: labels_val})
+                                            shuffle=True, callbacks=callbacks, validation_callbacks=validation_callbacks, validation_x={input: spikes_test}, validation_y={output: labels_test})
 
         
         
@@ -279,11 +268,10 @@ with compiled_net:
                 _Conn_Pop0_Pop1.vars["d"].push_to_device()
         
 
-        if valid_metrics[output].result > best_acc:
-            best_acc = valid_metrics[output].result
-            best_acc_train = train_metrics[output].result
+        if train_metrics[output].result > best_acc:
+            best_acc = train_metrics[output].result
             best_e = e
-            early_stop = 25
+            early_stop = args.early_stop
         else:
             early_stop -= 1
             if early_stop < 0:
