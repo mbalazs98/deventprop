@@ -15,7 +15,7 @@ from ml_genn.compilers.event_prop_compiler import default_params
 import copy
 
 
-BATCH_SIZE = 2
+BATCH_SIZE = 1
 NUM_EPOCHS = 200
 DT = 1.0
 TRAIN = True
