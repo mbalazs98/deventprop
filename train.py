@@ -43,7 +43,7 @@ max_spikes, latest_spike_time = dataset.get_data_info()
 
 
 serialiser = Numpy("checkpoints_" + unique_suffix)
-network, ff, rec, hidden, output = create_model(args, max_spikes)
+input, network, ff, rec, hidden, output = create_model(args, max_spikes)
 
 max_example_timesteps = int(np.ceil(latest_spike_time / args.DT))
 delay_learn_conns = []
@@ -123,7 +123,7 @@ with compiled_net:
         
 
         if metrics[output].result > best_acc:
-            best_acc = train_metrics[output].result
+            best_acc = metrics[output].result
             best_e = e
             early_stop = 15
         else:
