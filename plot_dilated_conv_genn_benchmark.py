@@ -19,16 +19,16 @@ fig, axes = plt.subplots(1, 2, figsize=(7.0, 3.2))
 
 # Plot memory
 actor_512 = axes[0].plot(data_512_hidden["Max delay [ms]"], 
-                         data_512_hidden["mlGeNN peak memory [MiB]"],
+                         data_512_hidden["mlGeNN peak memory [MiB]"] / 1024,
                          marker="o")
 actor_256 = axes[0].plot(data_256_hidden["Max delay [ms]"], 
-                         data_256_hidden["mlGeNN peak memory [MiB]"], 
+                         data_256_hidden["mlGeNN peak memory [MiB]"] / 1024, 
                          marker="o")
 axes[0].plot(data_512_hidden["Max delay [ms]"], 
-             data_512_hidden["DC max memory allocated [MiB]"],
+             data_512_hidden["DC max memory allocated [MiB]"] / 1024,
              marker="o", color=actor_512[0].get_color(), linestyle="--")
 axes[0].plot(data_256_hidden["Max delay [ms]"], 
-             data_256_hidden["DC max memory allocated [MiB]"],
+             data_256_hidden["DC max memory allocated [MiB]"] / 1024,
              marker="o", color=actor_256[0].get_color(), linestyle="--")
 
 
@@ -37,8 +37,9 @@ axes[1].plot(data_256_hidden["Max delay [ms]"], data_256_hidden["mlGeNN epoch ti
 axes[1].plot(data_512_hidden["Max delay [ms]"], data_512_hidden["DC epoch time [s]"], marker="o", color=actor_512[0].get_color(), linestyle="--")
 axes[1].plot(data_256_hidden["Max delay [ms]"], data_256_hidden["DC epoch time [s]"], marker="o", color=actor_256[0].get_color(), linestyle="--")
 
-axes[0].set_ylabel("GPU memory [MiB]")
+axes[0].set_ylabel("GPU memory [GiB]")
 axes[1].set_ylabel("Training time per epoch [s]")
+axes[0].set_yticks([0, 4, 8, 12, 16])
 #axes[0].set_ylim((0, 3000))
 #axes[1].set_ylim((0, 4000))
 
