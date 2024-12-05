@@ -137,7 +137,7 @@ class Dataset:
 
             # Determine max spikes and latest spike time
             max_spikes = max(max_spikes, calc_max_spikes(self.spikes_valid))
-            latest_spike_time = max(latest_spike_time, calc_latest_spike_time(self.labels_valid))
+            latest_spike_time = max(latest_spike_time, calc_latest_spike_time(self.spikes_valid))
 
         self.max_spikes, self.latest_spike_time = max_spikes, latest_spike_time
         
