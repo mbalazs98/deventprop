@@ -24,7 +24,7 @@ np.random.seed(args.SEED)
 # Figure out unique suffix for model data
 unique_suffix = "_".join(("_".join(str(i) for i in val) if isinstance(val, list) 
                          else str(val))
-                         for arg, val in vars(args).items())
+                         for arg, val in vars(args).items() if not arg.startswith("__"))
 
 class EaseInSchedule(Callback):
     def __init__(self):
