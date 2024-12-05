@@ -43,4 +43,4 @@ def create_model(args, max_spikes):
                 rec.append(None)
         Connection(hidden[-1], output, Dense(Normal(mean=0.0, sd=0.03)),
                 Exponential(5.0))
-    return network, ff, rec, hidden, output
+    return input, network, ff, rec, hidden, output
