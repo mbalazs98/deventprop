@@ -75,10 +75,10 @@ class Dataset:
             dataset = SHD(save_to="../data", train=True)
         elif self.db == "SSC":
             dataset = SSC(save_to="../data", split="train")
-        if self.db == "SHD" or self.db == "SSC":
-            self.augment.append(Shift(self.args.AUGMENT_SHIFT, self.args.NUM_INPUT))
         if self.db == "SHD":
             self.augment.append(Blend(self.args.P_BLEND, self.args.NUM_INPUT))
+        if self.db == "SHD" or self.db == "SSC":
+            self.augment.append(Shift(self.args.AUGMENT_SHIFT, self.args.NUM_INPUT))
 
         # Loop through dataset
         if self.db == "YY":
@@ -147,16 +147,16 @@ class Dataset:
     def __call__(self, split):
         if split == "train":
             if self.db == "SHD":
-                blended_dataset = self.augmentations[0](copy.deepcopy(self.raw_dataset), self.classes)
+                blended_dataset = self.augment[0](copy.deepcopy(self.raw_dataset), self.classes)
                 spikes_train, labels_train = [], []
                 for events, label in blended_dataset:
-                    spikes_train.append(preprocess_tonic_spikes(self.augmentations[1](events), self.ordering,
+                    spikes_train.append(preprocess_tonic_spikes(self.augment[1](events), self.ordering,
                                                             self.sensor_size))
                     labels_train.append(label)
             elif self.db == "SSC":
                 spikes_train, labels_train = [], []
                 for events, label in self.raw_dataset:
-                    spikes_train.append(preprocess_tonic_spikes(self.augmentations[0](events), self.ordering,
+                    spikes_train.append(preprocess_tonic_spikes(self.augment[0](events), self.ordering,
                                                             self.sensor_size))
                     labels_train.append(label)
             elif self.db == "YY":
