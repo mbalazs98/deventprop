@@ -17,7 +17,7 @@ from model import create_model
 from data import Dataset
 from arguments import shd_arguments, ssc_arguments, yy_arguments
 
-args = yy_arguments
+args = ssc_arguments
 
 np.random.seed(args.SEED)
 
@@ -50,7 +50,7 @@ delay_learn_conns = []
 if args.LEARN_FF:
     for conn in ff:
         delay_learn_conns.append(conn)
-if args.LEARN_REC:
+if args.RECURRENT and args.LEARN_REC:
     for conn in rec:
         delay_learn_conns.append(conn)
 
