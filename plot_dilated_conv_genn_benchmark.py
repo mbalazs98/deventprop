@@ -6,36 +6,43 @@ import matplotlib.gridspec as gs
 from itertools import chain
 from pandas import read_csv
 
+# Load data and sort
 data = read_csv("dilated_conv_ml_genn.csv", delimiter=",")
-
-
 data = data.sort_values(by="Max delay [ms]", ascending=False)
 
-data_512_hidden = data[data["Num hidden"] == 512]
-data_256_hidden = data[data["Num hidden"] == 256]
+# Filter rows with valid mlGeNN and DC data
+ml_genn_data = data[data["mlGeNN epoch time [s]"].notnull() & data["mlGeNN peak memory [MiB]"].notnull()]
+dc_data = data[data["DC epoch time [s]"].notnull() & data["DC max memory allocated [MiB]"].notnull()]
+
+# Split into 512 and 256 hidden neurons
+ml_genn_data_512_hidden = ml_genn_data[ml_genn_data["Num hidden"] == 512]
+ml_genn_data_256_hidden = ml_genn_data[ml_genn_data["Num hidden"] == 256]
+
+dc_data_512_hidden = dc_data[dc_data["Num hidden"] == 512]
+dc_data_256_hidden = dc_data[dc_data["Num hidden"] == 256]
 
 fig, axes = plt.subplots(1, 2, figsize=(7.0, 3.2))
 
 
 # Plot memory
-actor_512 = axes[0].plot(data_512_hidden["Max delay [ms]"], 
-                         data_512_hidden["mlGeNN peak memory [MiB]"] / 1024,
+actor_512 = axes[0].plot(ml_genn_data_512_hidden["Max delay [ms]"], 
+                         ml_genn_data_512_hidden["mlGeNN peak memory [MiB]"] / 1024,
                          marker="o")
-actor_256 = axes[0].plot(data_256_hidden["Max delay [ms]"], 
-                         data_256_hidden["mlGeNN peak memory [MiB]"] / 1024, 
+actor_256 = axes[0].plot(ml_genn_data_256_hidden["Max delay [ms]"], 
+                         ml_genn_data_256_hidden["mlGeNN peak memory [MiB]"] / 1024, 
                          marker="o")
-axes[0].plot(data_512_hidden["Max delay [ms]"], 
-             data_512_hidden["DC max memory allocated [MiB]"] / 1024,
+axes[0].plot(dc_data_512_hidden["Max delay [ms]"], 
+             dc_data_512_hidden["DC max memory allocated [MiB]"] / 1024,
              marker="o", color=actor_512[0].get_color(), linestyle="--")
-axes[0].plot(data_256_hidden["Max delay [ms]"], 
-             data_256_hidden["DC max memory allocated [MiB]"] / 1024,
+axes[0].plot(dc_data_256_hidden["Max delay [ms]"], 
+             dc_data_256_hidden["DC max memory allocated [MiB]"] / 1024,
              marker="o", color=actor_256[0].get_color(), linestyle="--")
 
 
-axes[1].plot(data_512_hidden["Max delay [ms]"], data_512_hidden["mlGeNN epoch time [s]"], marker="o", color=actor_512[0].get_color())
-axes[1].plot(data_256_hidden["Max delay [ms]"], data_256_hidden["mlGeNN epoch time [s]"], marker="o", color=actor_256[0].get_color())
-axes[1].plot(data_512_hidden["Max delay [ms]"], data_512_hidden["DC epoch time [s]"], marker="o", color=actor_512[0].get_color(), linestyle="--")
-axes[1].plot(data_256_hidden["Max delay [ms]"], data_256_hidden["DC epoch time [s]"], marker="o", color=actor_256[0].get_color(), linestyle="--")
+axes[1].plot(ml_genn_data_512_hidden["Max delay [ms]"], ml_genn_data_512_hidden["mlGeNN epoch time [s]"], marker="o", color=actor_512[0].get_color())
+axes[1].plot(ml_genn_data_256_hidden["Max delay [ms]"], ml_genn_data_256_hidden["mlGeNN epoch time [s]"], marker="o", color=actor_256[0].get_color())
+axes[1].plot(dc_data_512_hidden["Max delay [ms]"], dc_data_512_hidden["DC epoch time [s]"], marker="o", color=actor_512[0].get_color(), linestyle="--")
+axes[1].plot(dc_data_256_hidden["Max delay [ms]"], dc_data_256_hidden["DC epoch time [s]"], marker="o", color=actor_256[0].get_color(), linestyle="--")
 
 axes[0].set_ylabel("GPU memory [GiB]")
 axes[1].set_ylabel("Training time per epoch [s]")
