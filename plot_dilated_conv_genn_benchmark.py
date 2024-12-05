@@ -62,7 +62,7 @@ for a in axes[:2]:
 
 line_legend = fig.legend([actor_256[0],  mlines.Line2D([],[], color="black"), actor_512[0],mlines.Line2D([],[], linestyle="--", color="black")], 
                          ["256 hidden neurons", "mlGeNN", "512 hidden neurons",  "Dilated Convolutions"], 
-                         loc="lower center", ncol=2, columnspacing=1.0)
+                         loc="lower center", ncol=2, columnspacing=1.0, frameon=False)
 
 
 fig.tight_layout(pad=0, rect=[0.0, 0.2, 1.0, 1.0])
