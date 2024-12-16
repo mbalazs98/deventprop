@@ -46,7 +46,7 @@ class ssc_arguments:
 
     NUM_EPOCHS = 500
 
-    K_REG = [5e-11, 5e-12]
+    K_REG = [5e-12, 5e-12]
 
 class yy_arguments:
     DB = "YY"
