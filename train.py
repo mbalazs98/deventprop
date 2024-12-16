@@ -54,11 +54,14 @@ if args.RECURRENT and args.LEARN_REC:
     for conn in rec:
         delay_learn_conns.append(conn)
 
+k_reg = {}
+for i, hid in enumerate(hidden):
+    k_reg[hid] = args.K_REG[i]
 
 if args.DB == "SHD" or args.DB =="SSC":
     compiler = EventPropCompiler(example_timesteps=max_example_timesteps,
                                     losses="sparse_categorical_crossentropy",
-                                    reg_lambda_upper=args.K_REG, reg_lambda_lower=args.K_REG, 
+                                    reg_lambda_upper=k_reg, reg_lambda_lower=k_reg, 
                                     reg_nu_upper=14, max_spikes=1500,
                                     delay_learn_conns=delay_learn_conns,
                                     optimiser=Adam(0.001 * 0.01), delay_optimiser=Adam(args.DELAYS_LR),
