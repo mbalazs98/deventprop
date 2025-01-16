@@ -81,7 +81,9 @@ compiled_net = compiler.compile(network, name=model_name)
 with compiled_net:
     # Loop through epochs
     start_time = perf_counter()
-    callbacks = ["batch_progress_bar",EaseInSchedule(), Checkpoint(serialiser)]
+    callbacks = ["batch_progress_bar", Checkpoint(serialiser)]
+    if args.DB == "SHD" or args.DB =="SSC":
+        callbacks.append(EaseInSchedule())
     for i, hid in enumerate(hidden):
         callbacks.append(SpikeRecorder(hid, key="hidden_spikes_"+str(i), record_counts=True))
     if args.DB == "SSC":
