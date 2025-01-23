@@ -38,6 +38,12 @@ class EaseInSchedule(Callback):
         else:
             self._optimiser.alpha = 0.001
 
+def alpha_schedule(epoch, alpha):
+    return args.LR * (0.998 ** epoch)
+
+def alpha_schedule_delay(epoch, alpha):
+    return args.DELAYS_LR * (0.998 ** epoch)
+
 dataset = Dataset(args)
 max_spikes, latest_spike_time = dataset.get_data_info()
 
@@ -64,12 +70,12 @@ if args.DB == "SHD" or args.DB =="SSC":
                                     reg_lambda_upper=k_reg, reg_lambda_lower=k_reg, 
                                     reg_nu_upper=14, max_spikes=1500,
                                     delay_learn_conns=delay_learn_conns,
-                                    optimiser=Adam(0.001 * 0.01), delay_optimiser=Adam(args.DELAYS_LR),
+                                    optimiser=Adam(args.LR), delay_optimiser=Adam(args.DELAYS_LR),
                                     batch_size=args.BATCH_SIZE, rng_seed=args.SEED)
 else:
     compiler = EventPropCompiler(example_timesteps=max_example_timesteps,
                                 losses="sparse_categorical_crossentropy",
-                                optimiser=Adam(0.001 * 0.01), batch_size=args.BATCH_SIZE,
+                                optimiser=Adam(args.LR), batch_size=args.BATCH_SIZE,
                                 softmax_temperature=0.5, ttfs_alpha=0.1, dt=args.DT, delay_learn_conns=delay_learn_conns,
                                 delay_optimiser=Adam(args.DELAYS_LR),
                                 rng_seed=args.SEED)
@@ -84,6 +90,9 @@ with compiled_net:
     callbacks = ["batch_progress_bar", Checkpoint(serialiser)]
     if args.DB == "SHD" or args.DB =="SSC":
         callbacks.append(EaseInSchedule())
+    else:
+        callbacks.append(OptimiserParamSchedule("alpha", alpha_schedule))
+        callbacks.append(OptimiserParamSchedule("alpha", alpha_schedule_delay))
     for i, hid in enumerate(hidden):
         callbacks.append(SpikeRecorder(hid, key="hidden_spikes_"+str(i), record_counts=True))
     if args.DB == "SSC":
