@@ -26,21 +26,21 @@ def create_model(args, max_spikes):
                         args.NUM_OUTPUT)
 
         # Connections
-        ff = [Connection(input, hidden[0], Dense(Normal(mean=0.03, sd=0.01), Uniform(0, args.FF_INIT)),
+        ff = [Connection(input, hidden[0], Dense(Normal(mean=args.INPUT_HIDDEN_MEAN, sd=args.INPUT_HIDDEN_SD), Uniform(0, args.FF_INIT)),
                 Exponential(5.0), max_delay_steps=1000)]
         if bool(args.RECURRENT):         
-            rec = [Connection(hidden[0], hidden[0], Dense(Normal(mean=0.0, sd=0.02), Uniform(0, args.RECURRENT_INIT)),
+            rec = [Connection(hidden[0], hidden[0], Dense(Normal(mean=args.RECURRENT_MEAN, sd=args.RECURRENT_SD), Uniform(0, args.RECURRENT_INIT)),
                     Exponential(5.0), max_delay_steps=1000)]
         else:
             rec = [None]
         for i in range(args.NUM_LAYER-1):
-            ff.append(Connection(hidden[i], hidden[i+1], Dense(Normal(mean=0.02, sd=0.03), Uniform(0, args.FF_INIT)),
+            ff.append(Connection(hidden[i], hidden[i+1], Dense(Normal(mean=args.HIDDEN_HIDDEN_MEAN, sd=args.HIDDEN_HIDDEN_SD), Uniform(0, args.FF_INIT)),
                 Exponential(5.0), max_delay_steps=1000))
             if bool(args.RECURRENT):
-                rec.append(Connection(hidden[i+1], hidden[i+1], Dense(Normal(mean=0.0, sd=0.02), Uniform(0, args.RECURRENT_INIT)),
+                rec.append(Connection(hidden[i+1], hidden[i+1], Dense(Normal(mean=args.RECURRENT_MEAN, sd=args.RECURRENT_SD), Uniform(0, args.RECURRENT_INIT)),
                     Exponential(5.0), max_delay_steps=1000))
             else:
                 rec.append(None)
-        Connection(hidden[-1], output, Dense(Normal(mean=0.0, sd=0.03)),
+        Connection(hidden[-1], output, Dense(Normal(mean=args.HIDDEN_OUT_MEAN, sd=args.HIDDEN_OUT_SD)),
                 Exponential(5.0))
     return input, network, ff, rec, hidden, output
