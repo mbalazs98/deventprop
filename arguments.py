@@ -15,6 +15,7 @@ class shd_arguments:
     RECURRENT = True
     RECURRENT_INIT = 0
 
+    LR = 0.001 * 0.01
     DT = 1
     LEARN_FF = True
     LEARN_REC = True
@@ -40,6 +41,7 @@ class ssc_arguments:
     RECURRENT = False
     RECURRENT_INIT = 0
 
+    LR = 0.001 * 0.01
     DT = 1
     LEARN_FF = True
     DELAYS_LR = 0.1
@@ -61,6 +63,7 @@ class yy_arguments:
     NUM_TRAIN = BATCH_SIZE * 10 * NUM_OUTPUT
     NUM_TEST = BATCH_SIZE  * 2 * NUM_OUTPUT
     EXAMPLE_TIME = 30.0
+    LR = 0.001
     DT = 0.01
     READOUT = "lif"
     FF_INIT = 0
