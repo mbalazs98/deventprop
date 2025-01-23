@@ -11,6 +11,12 @@ class shd_arguments:
     NUM_OUTPUT = 20
     NUM_LAYER = 1
     READOUT = "li"
+    INPUT_HIDDEN_MEAN = 0.03
+    INPUT_HIDDEN_SD = 0.01
+    RECURRENT_MEAN = 0.0
+    RECURRENT_SD = 0.02
+    HIDDEN_OUT_MEAN = 0.0
+    HIDDEN_OUT_SD = 0.03
     FF_INIT = 150
     RECURRENT = True
     RECURRENT_INIT = 0
@@ -37,6 +43,12 @@ class ssc_arguments:
     NUM_OUTPUT = 35
     NUM_LAYER = 2
     READOUT = "li"
+    INPUT_HIDDEN_MEAN = 0.03
+    INPUT_HIDDEN_SD = 0.01
+    HIDDEN_HIDDEN_MEAN = 0.02
+    HIDDEN_HIDDEN_SD = 0.03
+    HIDDEN_OUT_MEAN = 0.0
+    HIDDEN_OUT_SD = 0.03
     FF_INIT = 50
     RECURRENT = False
     RECURRENT_INIT = 0
@@ -66,6 +78,10 @@ class yy_arguments:
     LR = 0.001
     DT = 0.01
     READOUT = "lif"
+    INPUT_HIDDEN_MEAN = 1.9
+    INPUT_HIDDEN_SD = 0.78
+    HIDDEN_OUT_MEAN = 0.93
+    HIDDEN_OUT_SD = 0.1
     FF_INIT = 0
     RECURRENT = False
     LEARN_FF = True
