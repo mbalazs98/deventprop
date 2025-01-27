@@ -118,7 +118,7 @@ class Dataset:
                 events, label = dataset[i]
                 events = np.delete(events, np.where(events["t"] >= 1000000))
                 self.spikes_test.append(preprocess_tonic_spikes(events, dataset.ordering,
-                                                        dataset.sensor_size))
+                                                        dataset.sensor_size, histogram_thresh=1, dt=args.DT))
                 self.labels_test.append(label)
 
             # Determine max spikes and latest spike time
@@ -132,7 +132,7 @@ class Dataset:
                 events, label = dataset[i]
                 events = np.delete(events, np.where(events["t"] >= 1000000))
                 self.spikes_valid.append(preprocess_tonic_spikes(events, dataset.ordering,
-                                                        dataset.sensor_size))
+                                                        dataset.sensor_size, histogram_thresh=1, dt=args.DT))
                 self.labels_valid.append(label)
 
             # Determine max spikes and latest spike time
@@ -151,13 +151,13 @@ class Dataset:
                 spikes_train, labels_train = [], []
                 for events, label in blended_dataset:
                     spikes_train.append(preprocess_tonic_spikes(self.augment[1](events), self.ordering,
-                                                            self.sensor_size))
+                                                            self.sensor_size, histogram_thresh=1, dt=args.DT))
                     labels_train.append(label)
             elif self.db == "SSC":
                 spikes_train, labels_train = [], []
                 for events, label in self.raw_dataset:
                     spikes_train.append(preprocess_tonic_spikes(self.augment[0](events), self.ordering,
-                                                            self.sensor_size))
+                                                            self.sensor_size, histogram_thresh=1, dt=args.DT))
                     labels_train.append(label)
             elif self.db == "YY":
                  spikes_train, labels_train = generate_yin_yang_dataset(self.args.NUM_TRAIN, 
