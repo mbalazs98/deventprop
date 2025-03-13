@@ -45,7 +45,12 @@ compiler = InferenceCompiler(evaluate_timesteps=max_example_timesteps,
                                 reset_in_syn_between_batches=True,
                                 batch_size=args.BATCH_SIZE)
 
-model_name = f"classifier_test_{os.path.basename(os.path.normpath(sys.argv[1]))}"
+# Figure out unique suffix for model data
+unique_suffix = "_".join(("_".join(str(i) for i in val) if isinstance(val, list) 
+                         else str(val))
+                         for arg, val in vars(args).items() if not arg.startswith("__"))
+model_name = (f"classifier_test_{md5(unique_suffix.encode()).hexdigest()}"
+              if os.name == "nt" else f"classifier_test_{unique_suffix}")
 compiled_net = compiler.compile(network, name=model_name)
 
 with compiled_net:
