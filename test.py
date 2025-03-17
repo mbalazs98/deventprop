@@ -11,7 +11,9 @@ import sys
 
 from model import create_model
 from data import Dataset
-from arguments import shd_arguments, ssc_arguments, yy_arguments
+from arguments import (shd_arguments, shd_recurrent_arguments, ssc_arguments,
+                       ssc_recurrent_arguments, yy_arguments)
+
 
 if len(sys.argv) < 2:
     raise RuntimeError("Please pass checkpoint directory as command line argument")
@@ -27,9 +29,9 @@ if len(checkpoints) > 1:
     raise RuntimeError("Checkpoints from multiple epochs found")
 
 
-args = shd_arguments
+args = ssc_arguments
 
-dataset = Dataset(args)
+dataset = Dataset(args, True)
 max_spikes, latest_spike_time = dataset.get_data_info()
 
 
@@ -67,3 +69,5 @@ with compiled_net:
     print(f"Time = {end_time - start_time}s")
     
     
+from ml_genn_netx import export
+export(f"{os.path.basename(os.path.normpath(sys.argv[1]))}.net", input, output, dt=args.DT)
