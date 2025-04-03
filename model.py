@@ -30,18 +30,18 @@ def create_model(args, max_spikes):
 
         # Connections
         ff = [Connection(input, hidden[0], Dense(Normal(mean=args.INPUT_HIDDEN_MEAN, sd=args.INPUT_HIDDEN_SD), _get_delay_init(args.FF_INIT)),
-                Exponential(5.0), max_delay_steps=1000)]
+                Exponential(5.0), max_delay_steps=args.MAX_DELAY_STEPS)]
         if bool(args.RECURRENT):         
             rec = [Connection(hidden[0], hidden[0], Dense(Normal(mean=args.RECURRENT_MEAN, sd=args.RECURRENT_SD), _get_delay_init(args.RECURRENT_INIT)),
-                    Exponential(5.0), max_delay_steps=1000)]
+                    Exponential(5.0), max_delay_steps=args.MAX_DELAY_STEPS)]
         else:
             rec = [None]
         for i in range(args.NUM_LAYER-1):
             ff.append(Connection(hidden[i], hidden[i+1], Dense(Normal(mean=args.HIDDEN_HIDDEN_MEAN, sd=args.HIDDEN_HIDDEN_SD), _get_delay_init(args.FF_INIT)),
-                Exponential(5.0), max_delay_steps=1000))
+                Exponential(5.0), max_delay_steps=args.MAX_DELAY_STEPS))
             if bool(args.RECURRENT):
                 rec.append(Connection(hidden[i+1], hidden[i+1], Dense(Normal(mean=args.RECURRENT_MEAN, sd=args.RECURRENT_SD), _get_delay_init(args.RECURRENT_INIT)),
-                    Exponential(5.0), max_delay_steps=1000))
+                    Exponential(5.0), max_delay_steps=args.MAX_DELAY_STEPS))
             else:
                 rec.append(None)
         Connection(hidden[-1], output, Dense(Normal(mean=args.HIDDEN_OUT_MEAN, sd=args.HIDDEN_OUT_SD)),

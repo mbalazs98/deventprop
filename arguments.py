@@ -20,6 +20,7 @@ class shd_recurrent_arguments:
     FF_INIT = 150
     RECURRENT = True
     RECURRENT_INIT = 0
+    MAX_DELAY_STEPS = 62
 
     LR = 0.001 * 0.01
     DT = 1
@@ -55,6 +56,43 @@ class shd_arguments:
     FF_INIT = 150
     RECURRENT = False
     RECURRENT_INIT = 0
+    MAX_DELAY_STEPS = 62
+
+    LR = 0.001 * 0.01
+    DT = 1
+    LEARN_FF = True
+    LEARN_REC = True
+    DELAYS_LR = 0.1
+
+    NUM_EPOCHS = 500
+
+    K_REG = 5e-11
+
+class shd_no_delay_arguments:
+    DB = "SHD"
+    SEED = 0
+
+    AUGMENT_SHIFT = 40
+    P_BLEND = 0.5
+
+    BATCH_SIZE = 256
+    NUM_INPUT = 700
+    NUM_HIDDEN = 512
+    NUM_OUTPUT = 20
+    NUM_LAYER = 2
+    READOUT = "li"
+    INPUT_HIDDEN_MEAN = 0.03
+    INPUT_HIDDEN_SD = 0.01
+    RECURRENT_MEAN = 0.0
+    RECURRENT_SD = 0.02
+    HIDDEN_HIDDEN_MEAN = 0.02
+    HIDDEN_HIDDEN_SD = 0.03
+    HIDDEN_OUT_MEAN = 0.0
+    HIDDEN_OUT_SD = 0.03
+    FF_INIT = 0
+    RECURRENT = False
+    RECURRENT_INIT = 0
+    MAX_DELAY_STEPS = None
 
     LR = 0.001 * 0.01
     DT = 1
@@ -87,6 +125,7 @@ class ssc_arguments:
     FF_INIT = 50
     RECURRENT = False
     RECURRENT_INIT = 0
+    MAX_DELAY_STEPS = 62
 
     LR = 0.001 * 0.01
     DT = 1
@@ -97,6 +136,38 @@ class ssc_arguments:
 
     K_REG = [5e-12, 5e-12]
 
+class ssc_no_delay_arguments:
+    DB = "SSC"
+    SEED = 0
+
+    AUGMENT_SHIFT = 40
+
+    BATCH_SIZE = 256
+    NUM_INPUT = 700
+    NUM_HIDDEN = 1024
+    NUM_OUTPUT = 35
+    NUM_LAYER = 2
+    READOUT = "li"
+    INPUT_HIDDEN_MEAN = 0.03
+    INPUT_HIDDEN_SD = 0.01
+    HIDDEN_HIDDEN_MEAN = 0.02
+    HIDDEN_HIDDEN_SD = 0.03
+    HIDDEN_OUT_MEAN = 0.0
+    HIDDEN_OUT_SD = 0.03
+    FF_INIT = 0
+    RECURRENT = False
+    RECURRENT_INIT = 0
+    MAX_DELAY_STEPS = None
+
+    LR = 0.001 * 0.01
+    DT = 1
+    LEARN_FF = True
+    DELAYS_LR = 0.1
+
+    NUM_EPOCHS = 500
+
+    K_REG = [5e-12, 5e-12]
+    
 class ssc_recurrent_arguments:
     DB = "SSC"
     SEED = 0
@@ -120,6 +191,7 @@ class ssc_recurrent_arguments:
     FF_INIT = 50
     RECURRENT = True
     RECURRENT_INIT = 0
+    MAX_DELAY_STEPS = 62
 
     LR = 0.001 * 0.01
     DT = 1
