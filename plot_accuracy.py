@@ -19,40 +19,48 @@ df = load_data_frame(bar_group_params, path=".", load_test=True)
 
 # Splice in Loihi accuracy
 #df["test_loihi_accuracy"] = df.apply(lambda r: loihi_data.get((r["dataset"], r["num_hidden"])), axis="columns")   
-   
+
+
+# Replace dataset and feedforward columns with single name
+df["NAME"] = df.apply(lambda r: f"{r['DB']}\n{'Recurrent' if r['RECURRENT'] else 'Feedforward'}", axis=1)   
+df = df.drop(["RECURRENT", "DB"], axis="columns")
+
 fig, axis = plt.subplots(figsize=(column_width, 1.75))
 
 # Group by bar group params and aggregate across repeats
-group_df = df.groupby(bar_group_params, as_index=False, dropna=False)
+group_df = df.groupby(["MAX_DELAY_STEPS", "NAME"], as_index=False, dropna=False)
 group_df = group_df.agg(mean_test_accuracy=NamedAgg(column="test_accuracy", aggfunc="mean"),
                         std_test_accuracy=NamedAgg(column="test_accuracy", aggfunc="std"))
                         #mean_test_loihi_accuracy=NamedAgg(column="test_loihi_accuracy", aggfunc="mean"),
                         #std_test_loihi_accuracy=NamedAgg(column="test_loihi_accuracy", aggfunc="std"),
-print(group_df)
-assert False
-# Find unique hidden sizes and their indices
-xticks, xtick_index = np.unique(group_df["num_hidden"], return_inverse=True)
 
-genn_test_actor = axis.bar(xtick_index + 0.2, group_df["mean_test_accuracy"],
-                           yerr=group_df["std_test_accuracy"], width=0.2)
+# Find unique hidden sizes and their indices
+xticks, xtick_index = np.unique(group_df["NAME"], return_inverse=True)
+group_df["XTICK_INDEX"] = xtick_index
+
+# Split data into delayed and non-delayed
+no_delay_df = group_df[group_df["MAX_DELAY_STEPS"].isnull()]
+delay_df = group_df[group_df["MAX_DELAY_STEPS"].notnull()]
+
+genn_no_delay_actor = axis.bar(no_delay_df["XTICK_INDEX"] + 0.2, no_delay_df["mean_test_accuracy"],
+                               yerr=no_delay_df["std_test_accuracy"], width=0.2)
+genn_delay_actor = axis.bar(delay_df["XTICK_INDEX"] + 0.4, delay_df["mean_test_accuracy"],
+                            yerr=delay_df["std_test_accuracy"], width=0.2)
 #loihi_test_actor = axis.bar(xtick_index + 0.4, group_df["mean_test_loihi_accuracy"],
 #                            yerr=group_df["std_test_loihi_accuracy"], width=0.2)
 
 
 sns.despine(ax=axis)
-ax.xaxis.grid(False)
+axis.xaxis.grid(False)
 axis.set_yticks([0.0, 20.0, 40.0, 60.0, 80.0, 100.0])
 axis.set_xticks(np.arange(len(xticks)) + 0.3)
-
+axis.set_ylabel("Accuracy [%]")
 axis.set_xticklabels(xticks)
 
-"""    
-axes[0].set_ylabel("Accuracy [%]")
-
-fig.legend(actors, ["mlGeNN train", "mlGeNN test", "Lava fixed-point test", "Loihi test"],
+fig.legend([genn_no_delay_actor, genn_delay_actor], ["mlGeNN test\nno delay", "mlGeNN test\ndelay"],
            loc="lower center", ncol=2, frameon=False)
 fig.tight_layout(pad=0, rect=[0.0, 0.225, 1.0, 1.0])
 
 fig.savefig("accuracy.pdf")
-"""
+
 plt.show()
