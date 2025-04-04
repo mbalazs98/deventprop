@@ -13,14 +13,9 @@ from plot_settings import column_width, double_column_width
 #             ("shd", 1024): 85.37985866, ("ssc", 256): 58.91472868,
 #              ("ssc", 512): 61.74075164, ("ssc", 1024): 62.49632028}
 
-bar_group_params = ["DB", "RECURRENT"]
-compare_params = ["MAX_DELAY_STEPS"]
+bar_group_params = ["MAX_DELAY_STEPS", "DB", "RECURRENT"]
 
-keys = bar_group_params + compare_params
-df = load_data_frame(keys, path=".", load_test=True)
-
-# Fixup missing max delay steps
-df["MAX_DELAY_STEPS"][df["MAX_DELAY_STEPS"].isnull()] = 62
+df = load_data_frame(bar_group_params, path=".", load_test=True)
 
 # Splice in Loihi accuracy
 #df["test_loihi_accuracy"] = df.apply(lambda r: loihi_data.get((r["dataset"], r["num_hidden"])), axis="columns")   
