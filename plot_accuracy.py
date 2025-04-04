@@ -57,7 +57,7 @@ axis.set_xticks(np.arange(len(xticks)) + 0.3)
 axis.set_ylabel("Accuracy [%]")
 axis.set_xticklabels(xticks)
 
-fig.legend([genn_no_delay_actor, genn_delay_actor], ["mlGeNN test\nno delay", "mlGeNN test\ndelay"],
+fig.legend([genn_no_delay_actor, genn_delay_actor], ["mlGeNN (no delay)", "mlGeNN (delay)"],
            loc="lower center", ncol=2, frameon=False)
 fig.tight_layout(pad=0, rect=[0.0, 0.225, 1.0, 1.0])
 
