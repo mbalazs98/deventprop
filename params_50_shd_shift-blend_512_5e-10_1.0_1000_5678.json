@@ -1,0 +1,1 @@
+{"mode": "train", "kernel_profiling": false, "plot": false, "num_epochs": 50, "test_checkpoint": null, "dataset": "shd", "augmentation": "shift-blend", "num_test_samples": null, "num_hidden": 512, "reg_lambda": 5e-10, "dt": 1.0, "num_timesteps": 1000, "seed": 5678}
