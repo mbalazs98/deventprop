@@ -1,6 +1,7 @@
 import csv
 import numpy as np
 
+from multiprocessing import Event, Process
 from ml_genn.callbacks import Callback
 from ml_genn.compilers import InferenceCompiler
 from ml_genn.serialisers import Numpy
@@ -17,7 +18,7 @@ from data import Dataset
 from arguments import (shd_arguments, shd_recurrent_arguments, ssc_arguments,
                        ssc_recurrent_arguments, yy_arguments)
 
-KERNEL_PROFILING = False
+KERNEL_PROFILING = True
 RECORD_JETSON_POWER = False
 
 class CSVTestLog(Callback):
@@ -76,7 +77,7 @@ if len(checkpoints) > 1:
     raise RuntimeError("Checkpoints from multiple epochs found")
 
 
-args = ssc_recurrent_arguments
+args = shd_recurrent_arguments
 
 dataset = Dataset(args, True)
 max_spikes, latest_spike_time = dataset.get_data_info()
@@ -101,7 +102,7 @@ unique_suffix = "_".join(("_".join(str(i) for i in val) if isinstance(val, list)
                          for arg, val in vars(args).items() if not arg.startswith("__"))
 
 # Dump parameters to file
-output_file_title = os.path.basename(os.path.normpath(sys.argv[1]))
+output_file_title = os.path.basename(os.path.normpath(sys.argv[1])) + f"_{args.BATCH_SIZE}"
 with open(f"params_{output_file_title}.json", "w") as fp:
     dump({arg: val for arg, val in vars(args).items() 
           if not arg.startswith("__")}, fp)
@@ -109,7 +110,7 @@ with open(f"params_{output_file_title}.json", "w") as fp:
 if RECORD_JETSON_POWER:
     jetson_power_stop_event = Event()
     jetson_power_process = Process(target=record_jetson_power_process,
-                                    args=(unique_suffix, jetson_power_stop_event))
+                                    args=(output_file_title, jetson_power_stop_event))
     jetson_power_process.start()
 
     # Sleep for 5 seconds to get idle power

@@ -5,7 +5,7 @@ class shd_recurrent_arguments:
     AUGMENT_SHIFT = 40
     P_BLEND = 0.5
 
-    BATCH_SIZE = 256
+    BATCH_SIZE = 128
     NUM_INPUT = 700
     NUM_HIDDEN = 512
     NUM_OUTPUT = 20
@@ -39,7 +39,7 @@ class shd_arguments:
     AUGMENT_SHIFT = 40
     P_BLEND = 0.5
 
-    BATCH_SIZE = 256
+    BATCH_SIZE = 1
     NUM_INPUT = 700
     NUM_HIDDEN = 512
     NUM_OUTPUT = 20
@@ -174,7 +174,7 @@ class ssc_recurrent_arguments:
 
     AUGMENT_SHIFT = 40
 
-    BATCH_SIZE = 256
+    BATCH_SIZE = 1
     NUM_INPUT = 700
     NUM_HIDDEN = 1024
     NUM_OUTPUT = 35
