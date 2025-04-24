@@ -12,7 +12,8 @@ from plot_settings import column_width, double_column_width
 
 loihi_data = {("SHD", True, 62.0): 90.9, ("SHD", False, 62.0): 88.0,
               ("SHD", True, None): 89.48763251, ("SSC", True, None): 62.49632028,
-              ("SSC", True, 62.0): 67.8, ("SSC", False, 62.0): 69.8}
+              ("SSC", True, 62.0): 67.8, ("SSC", False, 62.0): 69.8,
+              ("SSC", False, None): 42.6}
 
 
 bar_group_params = ["MAX_DELAY_STEPS", "DB", "RECURRENT"]
@@ -48,12 +49,12 @@ delay_df = group_df[group_df["MAX_DELAY_STEPS"].notnull()]
 
 genn_no_delay_actor = axis.bar(no_delay_df["XTICK_INDEX"] + 0.2, no_delay_df["mean_test_accuracy"],
                                yerr=no_delay_df["std_test_accuracy"], width=0.2)
-genn_delay_actor = axis.bar(delay_df["XTICK_INDEX"] + 0.4, delay_df["mean_test_accuracy"],
-                            yerr=delay_df["std_test_accuracy"], width=0.2)
-loihi_delay_actor = axis.bar(delay_df["XTICK_INDEX"] + 0.6, delay_df["mean_test_loihi_accuracy"],
-                             yerr=delay_df["std_test_loihi_accuracy"], width=0.2)
-loihi_no_delay_actor = axis.bar(no_delay_df["XTICK_INDEX"] + 0.8, no_delay_df["mean_test_loihi_accuracy"],
+loihi_no_delay_actor = axis.bar(no_delay_df["XTICK_INDEX"] + 0.4, no_delay_df["mean_test_loihi_accuracy"],
                                 yerr=no_delay_df["std_test_loihi_accuracy"], width=0.2)
+genn_delay_actor = axis.bar(delay_df["XTICK_INDEX"] + 0.6, delay_df["mean_test_accuracy"],
+                            yerr=delay_df["std_test_accuracy"], width=0.2)
+loihi_delay_actor = axis.bar(delay_df["XTICK_INDEX"] + 0.8, delay_df["mean_test_loihi_accuracy"],
+                             yerr=delay_df["std_test_loihi_accuracy"], width=0.2)
 
 sns.despine(ax=axis)
 axis.xaxis.grid(False)
@@ -62,8 +63,8 @@ axis.set_xticks(np.arange(len(xticks)) + 0.5)
 axis.set_ylabel("Accuracy [%]")
 axis.set_xticklabels(xticks)
 
-fig.legend([genn_no_delay_actor, genn_delay_actor, loihi_no_delay_actor, loihi_delay_actor], 
-           ["mlGeNN (no delay)", "mlGeNN (delay)", "Loihi (no delay)", "Loihi (delay)"],
+fig.legend([genn_no_delay_actor, loihi_no_delay_actor, genn_delay_actor, loihi_delay_actor], 
+           ["mlGeNN (no delay)", "Loihi (no delay)", "mlGeNN (delay)", "Loihi (delay)"],
            loc="lower center", ncol=2, frameon=False)
 fig.tight_layout(pad=0, rect=[0.0, 0.225, 1.0, 1.0])
 
