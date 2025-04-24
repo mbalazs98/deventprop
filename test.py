@@ -7,6 +7,7 @@ from ml_genn.compilers import InferenceCompiler
 from ml_genn.serialisers import Numpy
 
 from glob import glob
+from hashlib import md5
 from json import dump
 from time import perf_counter, sleep
 
