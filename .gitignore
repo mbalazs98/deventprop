@@ -1,0 +1,4 @@
+__pycache__
+*.net
+checkpoints*/*.npy
+*_CODE/**
