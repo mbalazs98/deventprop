@@ -13,7 +13,7 @@ from plot_settings import column_width, double_column_width
 loihi_data = {("SHD", True, 62.0): 90.9, ("SHD", False, 62.0): 88.0,
               ("SHD", True, None): 89.48763251, ("SSC", True, None): 62.49632028,
               ("SSC", True, 62.0): 67.8, ("SSC", False, 62.0): 69.8,
-              ("SSC", False, None): 42.6}
+              ("SSC", False, None): 42.6, ("SHD", False, None): 67.9}
 
 
 bar_group_params = ["MAX_DELAY_STEPS", "DB", "RECURRENT"]
