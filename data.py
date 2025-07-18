@@ -67,43 +67,48 @@ class Blend:
 
 
 class Dataset:
-    def __init__(self,args):
+    def __init__(self,args,test=False):
         self.db = args.DB
         self.args = args
         self.augment = []
-        if self.db == "SHD":
-            dataset = SHD(save_to="../data", train=True)
-        elif self.db == "SSC":
-            dataset = SSC(save_to="../data", split="train")
-        if self.db == "SHD":
-            self.augment.append(Blend(self.args.P_BLEND, self.args.NUM_INPUT))
-        if self.db == "SHD" or self.db == "SSC":
-            self.augment.append(Shift(self.args.AUGMENT_SHIFT, self.args.NUM_INPUT))
-
-        # Loop through dataset
-        if self.db == "YY":
-            max_spikes = self.args.NUM_INPUT
-            latest_spike_time = self.args.EXAMPLE_TIME
-        else:
-            self.ordering = dataset.ordering
-            self.sensor_size = dataset.sensor_size
-            max_spikes = 0
-            latest_spike_time = 0
-            self.raw_dataset = []
+        
+        # Load training set
+        max_spikes = 0
+        latest_spike_time = 0
+        if not test:
             if self.db == "SHD":
-                self.classes = [[] for _ in range(20)]
-            for i, data in enumerate(dataset):
-                events, label = data
-                events = np.delete(events, np.where(events["t"] >= 1000000))
-                if self.db == "SHD":
-                    self.classes[label].append(len(self.raw_dataset))
-                # Add raw events and label to list
-                self.raw_dataset.append((events, label))
-                
-                # Calculate max spikes and max times
-                max_spikes = max(max_spikes, len(events))
-                latest_spike_time = max(latest_spike_time, np.amax(events["t"]) / 1000.0)
+                dataset = SHD(save_to="../data", train=True)
+            elif self.db == "SSC":
+                dataset = SSC(save_to="../data", split="train")
+            if self.db == "SHD":
+                self.augment.append(Blend(self.args.P_BLEND, self.args.NUM_INPUT))
+            if self.db == "SHD" or self.db == "SSC":
+                self.augment.append(Shift(self.args.AUGMENT_SHIFT, self.args.NUM_INPUT))
 
+            # Loop through dataset
+            if self.db == "YY":
+                max_spikes = self.args.NUM_INPUT
+                latest_spike_time = self.args.EXAMPLE_TIME
+            else:
+                self.ordering = dataset.ordering
+                self.sensor_size = dataset.sensor_size    
+                self.raw_dataset = []
+                if self.db == "SHD":
+                    self.classes = [[] for _ in range(20)]
+
+                for i, data in enumerate(dataset):
+                    events, label = data
+                    events = np.delete(events, np.where(events["t"] >= 1000000))
+                    if self.db == "SHD":
+                        self.classes[label].append(len(self.raw_dataset))
+                    # Add raw events and label to list
+                    self.raw_dataset.append((events, label))
+                
+                    # Calculate max spikes and max times
+                    max_spikes = max(max_spikes, len(events))
+                    latest_spike_time = max(latest_spike_time, np.amax(events["t"]) / 1000.0)
+
+        # Load test set
         if self.db == "SHD":
             dataset = SHD(save_to="../data", train=False)
         elif self.db == "SSC":
@@ -124,7 +129,9 @@ class Dataset:
             # Determine max spikes and latest spike time
             max_spikes = max(max_spikes, calc_max_spikes(self.spikes_test))
             latest_spike_time = max(latest_spike_time, calc_latest_spike_time(self.spikes_test))
-        if self.db == "SSC":
+        
+        # Load validation set
+        if self.db == "SSC" and not test:
             dataset = SSC(save_to="../data", split="valid")
             self.spikes_valid= []
             self.labels_valid = []
