@@ -6,6 +6,68 @@ from ml_genn.utils.data import (calc_latest_spike_time, calc_max_spikes,
 
 from ml_genn.utils.data import generate_yin_yang_dataset
 
+letters = ['Space', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K',
+           'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
+
+class braille_dataset:
+    def __init__(self, args):
+        self.threshold = args.threshold
+        self.nb_input_copies = args.nb_input_copies
+        self.time_bin_size = args.DT
+        # Load data and parameters
+        file_dir_data = '../data/reading_braille_data/'
+        file_type = 'data_braille_letters_th_'
+        file_thr = str(self.threshold)
+        file_name = file_dir_data + file_type + file_thr + '.pkl'
+
+        # load data
+        self.load_and_extract(file_name, letter_written=letters)
+
+
+
+    def load_and_extract(self, file_name, letter_written=letters):
+
+
+        data_dict = pd.read_pickle(file_name)
+        # Extract data
+        data = []
+        labels = []
+        bins = 1000  # ms conversion
+        # loop over all trials
+        for i, sample in enumerate(data_dict['events']):
+            ids = []
+            times = []
+            # loop over sensors (taxel)
+            for taxel in range(len(sample)):
+                
+                # loop over On and Off channels
+                for event_type in range(len(sample[taxel])):
+                    if sample[taxel][event_type]:
+                        indx = bins*(np.array(sample[taxel][event_type]))
+                        indx = np.array((indx/self.time_bin_size).round(), dtype=int)
+                        for ind in indx:
+                            for copies in range(self.nb_input_copies):
+                                ids.append(taxel + event_type * 12 + 24 * copies)
+                                times.append(ind)
+            data.append((np.array(times), np.array(ids)))
+            labels.append(letter_written.index(data_dict['letter'][i]))
+
+            # create 70/20/10 train/test/validation split
+        # first create 70/30 train/(test + validation)
+        x_train, x_test, y_train, y_test = train_test_split(
+            data, labels, test_size=0.30, shuffle=True, stratify=labels)
+        # split test and validation 2/1
+        x_test, x_validation, y_test, y_validation = train_test_split(
+            x_test, y_test, test_size=0.33, shuffle=True, stratify=y_test)
+
+
+        self.x_train_braille = x_train
+        self.y_train_braille  = y_train
+        self.x_validation_braille  = x_validation 
+        self.y_validation_braille  = y_validation 
+        self.x_test_braille  = x_test 
+        self.y_test_braille  = y_test
+
 class Shift:
     def __init__(self, f_shift, num_input):
         self.f_shift = f_shift
@@ -75,6 +137,9 @@ class Dataset:
             dataset = SHD(save_to="../data", train=True)
         elif self.db == "SSC":
             dataset = SSC(save_to="../data", split="train")
+        elif self.db == "BRAILLE":
+            ds = braille_dataset(args)
+            dataset = zip(ds.x_train_braille,ds.y_train_braille)
         if self.db == "SHD":
             self.augment.append(Blend(self.args.P_BLEND, self.args.NUM_INPUT))
         if self.db == "SHD" or self.db == "SSC":
@@ -84,6 +149,15 @@ class Dataset:
         if self.db == "YY":
             max_spikes = self.args.NUM_INPUT
             latest_spike_time = self.args.EXAMPLE_TIME
+        elif self.db == "BRAILLE":
+            spikes_train = []
+            labels_train = []
+            for i, data in enumerate(dataset):
+                events, label = data
+                spikes_train.append(preprocess_spikes(events[0], events[1], num_input))
+                labels_train.append(label)
+            max_spikes = calc_max_spikes(spikes_train)
+            latest_spike_time = calc_latest_spike_time(spikes_train)
         else:
             self.ordering = dataset.ordering
             self.sensor_size = dataset.sensor_size
@@ -111,6 +185,16 @@ class Dataset:
         elif self.db == "YY":
             self.spikes_test, self.labels_test = generate_yin_yang_dataset(self.args.NUM_TEST, 
                                            self.args.EXAMPLE_TIME - (4 * self.args.DT), 2 * self.args.DT)
+        elif self.db == "BRAILLE":
+            dataset = zip(ds.x_test_braille,ds.y_test_braille)
+            spikes_test = []
+            labels_test = []
+            for i, data in enumerate(dataset):
+                events, label = data
+                spikes_test.append(preprocess_spikes(events[0], events[1], num_input))
+                labels_test.append(label)
+            max_spikes = max(max_spikes, calc_max_spikes(self.spikes_test))
+            latest_spike_time = max(latest_spike_time, calc_latest_spike_time(self.spikes_test))
         if self.db == "SHD" or self.db == "SSC":
             self.spikes_test = []
             self.labels_test = []
@@ -138,7 +222,16 @@ class Dataset:
             # Determine max spikes and latest spike time
             max_spikes = max(max_spikes, calc_max_spikes(self.spikes_valid))
             latest_spike_time = max(latest_spike_time, calc_latest_spike_time(self.spikes_valid))
-
+        elif self.db == "BRAILLE":
+            dataset = zip(ds.x_valid_braille,ds.y_valid_braille)
+            spikes_valid = []
+            labels_valid = []
+            for i, data in enumerate(dataset):
+                events, label = data
+                spikes_valid.append(preprocess_spikes(events[0], events[1], num_input))
+                labels_valid.append(label)
+            max_spikes = max(max_spikes, calc_max_spikes(self.spikes_test))
+            latest_spike_time = max(latest_spike_time, calc_latest_spike_time(self.spikes_valid))
         self.max_spikes, self.latest_spike_time = max_spikes, latest_spike_time
         
     def get_data_info(self):
