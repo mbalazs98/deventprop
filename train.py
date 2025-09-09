@@ -6,6 +6,7 @@ from ml_genn.callbacks import Checkpoint, SpikeRecorder, Callback
 from ml_genn.compilers import EventPropCompiler
 from ml_genn.optimisers import Adam
 from ml_genn.serialisers import Numpy
+from ml_genn.losses import RelativeMeanSquareError
 
 from time import perf_counter
 
@@ -71,10 +72,11 @@ if args.DB == "SHD" or args.DB =="SSC" or args.DB == "BRAILLE":
                                     batch_size=args.BATCH_SIZE, rng_seed=args.SEED)
 else:
     compiler = EventPropCompiler(example_timesteps=max_example_timesteps,
-                                losses="sparse_categorical_crossentropy",
+                                losses=RelativeMeanSquareError(10.0 * 0.2),
                                 optimiser=Adam(args.LR), batch_size=args.BATCH_SIZE,
-                                softmax_temperature=0.5, ttfs_alpha=0.1, dt=args.DT, delay_learn_conns=delay_learn_conns,
+                                dt=args.DT, delay_learn_conns=delay_learn_conns,
                                 delay_optimiser=Adam(args.DELAYS_LR),
+                                weight_bump_pops_and_conns=([hidden, output], [[in_hid], [hid_out]], [in_hid, hid_out]),
                                 rng_seed=args.SEED)
 
 model_name = (f"classifier_train_{md5(unique_suffix.encode()).hexdigest()}"
@@ -85,7 +87,7 @@ with compiled_net:
     # Loop through epochs
     start_time = perf_counter()
     callbacks = ["batch_progress_bar", Checkpoint(serialiser)]
-    if args.DB == "SHD" or args.DB =="SSC":
+    if args.DB == "SHD" or args.DB =="SSC" or args.DB == "BRAILE":
         callbacks.append(EaseInSchedule())
     else:
         callbacks.append(OptimiserParamSchedule("alpha", alpha_schedule))
@@ -97,7 +99,7 @@ with compiled_net:
     early_stop = 15
     for e in range(args.NUM_EPOCHS):
         spikes_train, labels_train = dataset("train")
-        if args.DB == "SSC":
+        if args.DB != "SHD":
             spikes_valid, labels_valid = dataset("valid")            
             train_metrics, metrics, cb, valid_cb  = compiled_net.train({input: spikes_train},
                                                 {output: labels_train},
@@ -109,27 +111,28 @@ with compiled_net:
                                                 start_epoch=e, num_epochs=1, 
                                                 shuffle=True, callbacks=callbacks)
         
-        
-        hidden_spikes = np.zeros(args.NUM_HIDDEN)
-        for cb_d in cb['hidden_spikes_0']:
-            hidden_spikes += cb_d
 
-        Conn = compiled_net.connection_populations[ff[0]]
-        Conn.vars["g"].pull_from_device()
-        g_view = Conn.vars["g"].view.reshape((args.NUM_INPUT, args.NUM_HIDDEN))
-        g_view[:,hidden_spikes==0] += 0.002
-        Conn.vars["g"].push_to_device()
-
-        for i in range(1,args.NUM_LAYER):
-            hidden_spikes = np.zeros(args.NUM_HIDDEN)
-            for cb_d in cb['hidden_spikes_'+str(i)]:
-                hidden_spikes += cb_d
-
-            Conn = compiled_net.connection_populations[ff[i]]
-            Conn.vars["g"].pull_from_device()
-            g_view = Conn.vars["g"].view.reshape((args.NUM_HIDDEN, args.NUM_HIDDEN))
-            g_view[:,hidden_spikes==0] += 0.002
-            Conn.vars["g"].push_to_device()
+        if args.DB != "YY":
+          hidden_spikes = np.zeros(args.NUM_HIDDEN)
+          for cb_d in cb['hidden_spikes_0']:
+              hidden_spikes += cb_d
+  
+          Conn = compiled_net.connection_populations[ff[0]]
+          Conn.vars["g"].pull_from_device()
+          g_view = Conn.vars["g"].view.reshape((args.NUM_INPUT, args.NUM_HIDDEN))
+          g_view[:,hidden_spikes==0] += 0.002
+          Conn.vars["g"].push_to_device()
+  
+          for i in range(1,args.NUM_LAYER):
+              hidden_spikes = np.zeros(args.NUM_HIDDEN)
+              for cb_d in cb['hidden_spikes_'+str(i)]:
+                  hidden_spikes += cb_d
+  
+              Conn = compiled_net.connection_populations[ff[i]]
+              Conn.vars["g"].pull_from_device()
+              g_view = Conn.vars["g"].view.reshape((args.NUM_HIDDEN, args.NUM_HIDDEN))
+              g_view[:,hidden_spikes==0] += 0.002
+              Conn.vars["g"].push_to_device()
         
 
         if metrics[output].result > best_acc:
