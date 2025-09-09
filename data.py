@@ -140,6 +140,9 @@ class Dataset:
         elif self.db == "BRAILLE":
             ds = braille_dataset(args)
             dataset = zip(ds.x_train_braille,ds.y_train_braille)
+        elif self.db = "YY":
+          spikes_train, labels_train = generate_yin_yang_dataset(self.args.NUM_TRAIN, 
+                                           self.args.LATE-self.args.EARLY, self.args.EARLY, bias=False)
         if self.db == "SHD":
             self.augment.append(Blend(self.args.P_BLEND, self.args.NUM_INPUT))
         if self.db == "SHD" or self.db == "SSC":
@@ -148,14 +151,14 @@ class Dataset:
         # Loop through dataset
         if self.db == "YY":
             max_spikes = self.args.NUM_INPUT
-            latest_spike_time = self.args.EXAMPLE_TIME
+            latest_spike_time = self.args.LATE
         elif self.db == "BRAILLE":
-            spikes_train = []
-            labels_train = []
+            self.spikes_train = []
+            self.labels_train = []
             for i, data in enumerate(dataset):
                 events, label = data
-                spikes_train.append(preprocess_spikes(events[0], events[1], num_input))
-                labels_train.append(label)
+                self.spikes_train.append(preprocess_spikes(events[0], events[1], num_input))
+                self.labels_train.append(label)
             max_spikes = calc_max_spikes(spikes_train)
             latest_spike_time = calc_latest_spike_time(spikes_train)
         else:
@@ -184,7 +187,7 @@ class Dataset:
             dataset = SSC(save_to="../data", split="test")
         elif self.db == "YY":
             self.spikes_test, self.labels_test = generate_yin_yang_dataset(self.args.NUM_TEST, 
-                                           self.args.EXAMPLE_TIME - (4 * self.args.DT), 2 * self.args.DT)
+                                           self.args.LATE-self.args.EARLY, self.args.EARLY, bias=False)
         elif self.db == "BRAILLE":
             dataset = zip(ds.x_test_braille,ds.y_test_braille)
             spikes_test = []
@@ -224,14 +227,17 @@ class Dataset:
             latest_spike_time = max(latest_spike_time, calc_latest_spike_time(self.spikes_valid))
         elif self.db == "BRAILLE":
             dataset = zip(ds.x_valid_braille,ds.y_valid_braille)
-            spikes_valid = []
-            labels_valid = []
+            self.spikes_valid = []
+            self.labels_valid = []
             for i, data in enumerate(dataset):
                 events, label = data
-                spikes_valid.append(preprocess_spikes(events[0], events[1], num_input))
-                labels_valid.append(label)
+                self.spikes_valid.append(preprocess_spikes(events[0], events[1], num_input))
+                self.labels_valid.append(label)
             max_spikes = max(max_spikes, calc_max_spikes(self.spikes_test))
             latest_spike_time = max(latest_spike_time, calc_latest_spike_time(self.spikes_valid))
+          elif self.db == "YY":
+            self.spikes_valid, self.labels_valid = generate_yin_yang_dataset(self.args.NUM_VALID, 
+                                           self.args.LATE-self.args.EARLY, self.args.EARLY, bias=False)
         self.max_spikes, self.latest_spike_time = max_spikes, latest_spike_time
         
     def get_data_info(self):
@@ -252,10 +258,8 @@ class Dataset:
                     spikes_train.append(preprocess_tonic_spikes(self.augment[0](events), self.ordering,
                                                             self.sensor_size, histogram_thresh=1, dt=args.DT))
                     labels_train.append(label)
-            elif self.db == "YY":
-                 spikes_train, labels_train = generate_yin_yang_dataset(self.args.NUM_TRAIN, 
-                                        self.args.EXAMPLE_TIME - (4 * self.args.DT), 2 * self.args.DT)
-            return spikes_train, labels_train
+            elif self.db == "YY" or self.db == "BRAILLE:
+              return self.spikes_train, self.labels_train
         elif split == "test":
             return self.spikes_test, self.labels_test
         elif split == "valid":
