@@ -189,19 +189,50 @@ class braille_ff_arguments:
 
     K_REG = [1e-10, 1e-10]
 
-class yy_arguments:
+class yy_nodelay_arguments:
     DB = "YY"
     SEED = 0
 
-    NUM_INPUT = 5
+    NUM_INPUT = 4
+    NUM_HIDDEN = 30 # 25, 20, 15, 10, 5
+    NUM_LAYER = 1
+    NUM_OUTPUT = 3
+    BATCH_SIZE = 150
+    NUM_EPOCHS = 300
+    NUM_TRAIN = 5000
+    NUM_VALID = 1000
+    NUM_TEST = 1000
+    LATE = 20.0
+    EARLY = 1.5
+    LR = 0.005 # 0.01, 0.015, 0.01, 0.02 0.02
+    DT = 0.01 # 0.005, 0.005 0.005, 0.005, 0.01
+    DELAYS_LR = 0.0
+    READOUT = "lif"
+    INPUT_HIDDEN_MEAN = 1.9
+    INPUT_HIDDEN_SD = 0.78
+    HIDDEN_OUT_MEAN = 0.93
+    HIDDEN_OUT_SD = 0.1
+    FF_INIT = 0
+    RECURRENT = False
+    LEARN_FF = False
+    LEARN_REC = False
+    
+
+class yy_delay_arguments:
+    DB = "YY"
+    SEED = 0
+
+    NUM_INPUT = 4
     NUM_HIDDEN = 100
     NUM_LAYER = 1
     NUM_OUTPUT = 3
     BATCH_SIZE = 32
     NUM_EPOCHS = 300
-    NUM_TRAIN = BATCH_SIZE * 10 * NUM_OUTPUT
-    NUM_TEST = BATCH_SIZE  * 2 * NUM_OUTPUT
-    EXAMPLE_TIME = 30.0
+    NUM_TRAIN = 5000
+    NUM_VALID = 1000
+    NUM_TEST = 1000
+    LATE = 20.0
+    EARLY = 1.5
     LR = 0.001
     DT = 0.01
     READOUT = "lif"
@@ -214,5 +245,3 @@ class yy_arguments:
     LEARN_FF = True
     LEARN_REC = False
     DELAYS_LR = 0.1
-
-    
