@@ -160,7 +160,7 @@ class braille_rec_arguments:
 
 
 class braille_ff_arguments:
-    DB = "SSC"
+    DB = "BRAILLE"
     SEED = 0
 
 
