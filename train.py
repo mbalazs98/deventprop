@@ -61,7 +61,7 @@ k_reg = {}
 for i, hid in enumerate(hidden):
     k_reg[hid] = args.K_REG[i]
 
-if args.DB == "SHD" or args.DB =="SSC":
+if args.DB == "SHD" or args.DB =="SSC" or args.DB == "BRAILLE":
     compiler = EventPropCompiler(example_timesteps=max_example_timesteps,
                                     losses="sparse_categorical_crossentropy",
                                     reg_lambda_upper=k_reg, reg_lambda_lower=k_reg, 
