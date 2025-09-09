@@ -39,10 +39,7 @@ class EaseInSchedule(Callback):
             self._optimiser.alpha = 0.001
 
 def alpha_schedule(epoch, alpha):
-    return args.LR * (0.998 ** epoch)
-
-def alpha_schedule_delay(epoch, alpha):
-    return args.DELAYS_LR * (0.998 ** epoch)
+    return alpha * 0.9975
 
 dataset = Dataset(args)
 max_spikes, latest_spike_time = dataset.get_data_info()
@@ -92,7 +89,6 @@ with compiled_net:
         callbacks.append(EaseInSchedule())
     else:
         callbacks.append(OptimiserParamSchedule("alpha", alpha_schedule))
-        callbacks.append(OptimiserParamSchedule("alpha", alpha_schedule_delay))
     for i, hid in enumerate(hidden):
         callbacks.append(SpikeRecorder(hid, key="hidden_spikes_"+str(i), record_counts=True))
     if args.DB == "SSC":
